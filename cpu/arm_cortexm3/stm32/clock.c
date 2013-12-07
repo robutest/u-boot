@@ -137,7 +137,7 @@
 # define STM32_FLASH_WS			3
 #elif (STM32_SYS_CLK > 120000000) && (STM32_SYS_CLK <= 150000000)
 # define STM32_FLASH_WS			4
-#elif (STM32_SYS_CLK > 150000000) && (STM32_SYS_CLK <= 168000000)
+#elif (STM32_SYS_CLK > 150000000) && (STM32_SYS_CLK <= 180000000)
 # define STM32_FLASH_WS			5
 #else
 # error "Incorrect System clock value configuration."
@@ -238,6 +238,14 @@ static void clock_setup(void)
 		goto out;
 	}
 
+#if defined(CONFIG_SYS_STM32F43X)
+	/* 
+	 * Select regulator voltage output Scale 1 mode, System frequency up to 180 MHz
+     */
+	STM32_RCC->apb1enr |= 0x10000000;
+	STM32_PWR->cr |= 0x0000C000;
+#endif
+
 	val = STM32_RCC->cfgr;
 
 	/*
@@ -299,6 +307,16 @@ static void clock_setup(void)
 	 */
 	val = STM32_RCC_CFGR_SWS_HSE;
 # endif /* CONFIG_STM32_SYS_CLK_PLL */
+
+#if defined(CONFIG_SYS_STM32F43X)
+	/* 
+	 * Enable the Over-drive to extend the clock frequency to 180 Mhz
+	 */
+	STM32_PWR->cr |= 0x00010000;
+	while ((STM32_PWR->csr & 0x00010000) == 0);
+	STM32_PWR->cr |= 0x00020000;
+	while ((STM32_PWR->csr & 0x00020000) == 0);
+#endif
 
 	/*
 	 * Configure Flash prefetch, Instruction cache, and wait

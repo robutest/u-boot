@@ -190,18 +190,31 @@ static const enum stm32f2_gpio_role gpio_role[] = {
  */
 static volatile struct stm32_usart_regs	*usart_regs;
 
+
+/*
+ * Console port resources 
+ */
+static struct stm32f2_gpio_dsc	tx_gpio = { USART_TX_IO_PORT,
+					    					USART_TX_IO_PIN,
+					    					STM32F2_GPIO_ROLE_USART3 };
+static struct stm32f2_gpio_dsc	rx_gpio = { USART_RX_IO_PORT,
+					    					USART_RX_IO_PIN,
+					    					STM32F2_GPIO_ROLE_USART3 };
 /*
  * Initialize the serial port.
  */
 s32 serial_init(void)
 {
-	static struct stm32f2_gpio_dsc	tx_gpio = { USART_TX_IO_PORT,
-						    USART_TX_IO_PIN };
-	static struct stm32f2_gpio_dsc	rx_gpio = { USART_RX_IO_PORT,
-						    USART_RX_IO_PIN };
-	static volatile u32		*usart_enr;
-
+	static volatile u32	*usart_enr;
 	s32	rv;
+
+	/*
+ 	 * Assign the console port role. 
+ 	 */
+	if (CONFIG_STM32_USART_PORT > 0) {
+		tx_gpio.role = gpio_role[CONFIG_STM32_USART_PORT-1];
+		rx_gpio.role = gpio_role[CONFIG_STM32_USART_PORT-1];
+	}
 
 	/*
 	 * Setup registers
@@ -218,10 +231,10 @@ s32 serial_init(void)
 	/*
 	 * Configure GPIOs
 	 */
-	rv = stm32f2_gpio_config(&tx_gpio, gpio_role[USART_PORT]);
+	rv = stm32f2_gpio_config(&tx_gpio);
 	if (rv != 0)
 		goto out;
-	rv = stm32f2_gpio_config(&rx_gpio, gpio_role[USART_PORT]);
+	rv = stm32f2_gpio_config(&rx_gpio);
 	if (rv != 0)
 		goto out;
 
